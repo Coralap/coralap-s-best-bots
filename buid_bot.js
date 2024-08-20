@@ -5,6 +5,8 @@ const fs = require('fs')
 const {loader: autoJump} = require('@nxg-org/mineflayer-auto-jump');
 const { Schematic } = require('prismarine-schematic');
 const { posix } = require('path');
+const { finished } = require('stream');
+const { BlockList } = require('net');
 const pathfinder = require('mineflayer-pathfinder').pathfinder
 const Movements = require('mineflayer-pathfinder').Movements
 const { GoalNear } = require('mineflayer-pathfinder').goals
@@ -14,7 +16,7 @@ let placedblock=false;
 const bot = mineflayer.createBot({
     host : "localhost",
     port : "25565",
-    username: "Build_Bot",
+    username: "bilbal_bot",
     
    // auth:'microsoft',
    
@@ -47,38 +49,49 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
 
 
   if(message==="build"){
-
-   main().then(schem=>{
+ 
+   main().then( schem=>{
+    
     const size = schem.size;
     firstpos = bot.entity.position;
     const defaultMove = new Movements(bot)
     defaultMove.canDig = false;
-    
+    defaultMove.scafoldingBlocks.push(bot.registry.itemsByName['netherrack'].id) // Add nether rack to allowed scaffolding items
+
     bot.pathfinder.setMovements(defaultMove)
 
     let z =-1;
     let x=-1;
     let y =0;
-    bot.on("physicsTick",()=>{
+    finish =true;
+    bot.on("physicsTick",async ()=>{
       placedblock = false;
       const target = firstpos.offset(x,y,z);
       const blockpos = target.offset(-firstpos.x,-firstpos.y,-firstpos.z)
-            if(!bot.pathfinder.isMoving()){
-              
-              bot.pathfinder.setGoal(new GoalNear(target.x,target.y+1,target.z,0))
-              bot.chat("/item replace entity @s container.0 with minecraft:"+schem.getBlock(blockpos).name)
+            if(!bot.pathfinder.isMoving()&&finish){
+            
+              finish=false;
               if(schem.getBlock(blockpos).name!=="air"){
-                placeBlockSafely(target)
-
-              }else{
-                z+=1;
+                await bot.pathfinder.goto(new GoalNear(target.x-1,target.y+1,target.z,1))
+                await placeBlockSafely(target,schem,blockpos)
+                
               }
-              if(placedblock){
+
+              finish = true;
+             // bot.chat("/item replace entity @s container.0 with minecraft:"+schem.getBlock(blockpos).name)
+            //  if(schem.getBlock(blockpos).name!=="air"){
+               
+
+            //  }else{
+            //    z+=1;
+            //  }
+ 
                 z+=1;
 
-              }
+            
               
             }
+   
             if(z >size.z){
               x+=1;
               z=0;
@@ -89,9 +102,9 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
               z=0;
             }
 
-
+          
     });
-
+  
           //  bot.placeBlock(bot.blockAt(bot.entity.position.offset(x,y,z)),{x:0,y:1,z:0})
           
 
@@ -108,7 +121,7 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
 
   }
 
-
+  
 
 });
 
@@ -128,17 +141,34 @@ function wait(ms){
  }
 }
 
-async function placeBlockSafely(target) {
+async function placeBlockSafely(target,schem,blockpos) {
   try {
       // Attempt to place the block, waiting for the operation to complete.
-      console.log(target);
-      await bot.placeBlock(bot.blockAt(target.round().offset(0, 1, 0)), {x: 0, y: -1, z: 0});
-      
+      bot.setQuickBarSlot(0);
+      if(schem.getBlock(blockpos).name!=="air"){
+        if(bot.blockAt(target.round().offset(0,-1,0)).name==="air"){
+          try{
+            bot.chat("/item replace entity @s container.0 with minecraft:dirt")
+
+            await bot.lookAt(target.round(),true);
+            await bot.placeBlock(bot.blockAt(target.round().offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+          }catch(erro){
+
+          }
+
+        }
+        bot.chat("/item replace entity @s container.0 with minecraft:"+schem.getBlock(blockpos).name)
+        await bot.lookAt(target.round(),true);
+        await bot.placeBlock(bot.blockAt(target.round().offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+        
+      }
+
       placedblock=true;
     //  console.log('Block placed successfully.');
   } catch (error) {
       // Handle any errors that occur during the block placement.
       bot.chat("cant place block")
-      placeBlockSafely(target);
+
+      placedblock=true
   }
 }
