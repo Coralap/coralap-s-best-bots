@@ -11,6 +11,7 @@
   "dependencies": {
     "@nxg-org/mineflayer-auto-jump": "^0.7.7",
     "chalk": "^5.3.0",
+    "fs": "^0.0.1-security",
     "keybd": "^1.0.0",
     "keypress": "^0.2.1",
     "mineflayer": "^4.20.1",

@@ -1,11 +1,10 @@
 const mineflayerViewer = require('prismarine-viewer').mineflayer
 const mineflayer = require('mineflayer')
-const keypress = require('keypress');
-vec3=require('vec3');
+
 const fs = require('fs')
 const {loader: autoJump} = require('@nxg-org/mineflayer-auto-jump');
 const { Schematic } = require('prismarine-schematic');
-const { off } = require('process');
+const { posix } = require('path');
 const pathfinder = require('mineflayer-pathfinder').pathfinder
 const Movements = require('mineflayer-pathfinder').Movements
 const { GoalNear } = require('mineflayer-pathfinder').goals
@@ -50,24 +49,41 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
     const size = schem.size;
     firstpos = bot.entity.position;
     const defaultMove = new Movements(bot)
-
+    defaultMove.canDig = false;
+    
     bot.pathfinder.setMovements(defaultMove)
-    let z =0;
-    for (let y = 0; y < size.y; y++) {
-      for (let x = 0; x < size.x; x++) {
-        for ( z = 0; z < size.z; z++) {
-          const target = bot.entity.position.offset(x,y,z);
-    bot.pathfinder.setGoal(new GoalNear(target.x,target.y,target.z,0))
-          if(bot.pathfinder.isMoving){
-            z-=1;
-          }
-            bot.placeBlock(bot.blockAt(bot.entity.position.offset(x,y,z)),{x:0,y:1,z:0})
+
+    let z =-1;
+    let x=0;
+    let y =-1;
+    bot.on("physicsTick",()=>{
+      const target = firstpos.offset(x,y,z);
+      const blockpos = target.offset(-firstpos.x,-firstpos.y,-firstpos.z)
+            if(!bot.pathfinder.isMoving()){
+              bot.pathfinder.setGoal(new GoalNear(target.x,target.y+1,target.z,0))
+              bot.chat("/item replace entity @s container.0 with minecraft:"+schem.getBlock(blockpos).name)
+              if(schem.getBlock(blockpos).name!=="air"){
+                placeBlockSafely(target)
+
+              }
+              z+=1;
+              
+            }
+            if(z >size.z){
+              x+=1;
+              z=0;
+            }
+            if(x>size.x){
+              y+=1;
+              x=0;
+              z=0;
+            }
+
+
+    });
+
+          //  bot.placeBlock(bot.blockAt(bot.entity.position.offset(x,y,z)),{x:0,y:1,z:0})
           
-        }
-      
-      }
-      
-    }
 
 
 
@@ -100,4 +116,15 @@ function wait(ms){
   while(end < start + ms) {
     end = new Date().getTime();
  }
+}
+
+async function placeBlockSafely(target) {
+  try {
+      // Attempt to place the block, waiting for the operation to complete.
+      await bot.placeBlock(bot.blockAt(target.offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+    //  console.log('Block placed successfully.');
+  } catch (error) {
+      // Handle any errors that occur during the block placement.
+      bot.chat("cant place block")
+  }
 }
