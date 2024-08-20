@@ -8,6 +8,9 @@ const { posix } = require('path');
 const pathfinder = require('mineflayer-pathfinder').pathfinder
 const Movements = require('mineflayer-pathfinder').Movements
 const { GoalNear } = require('mineflayer-pathfinder').goals
+
+let placedblock=false;
+
 const bot = mineflayer.createBot({
     host : "localhost",
     port : "25565",
@@ -54,19 +57,26 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
     bot.pathfinder.setMovements(defaultMove)
 
     let z =-1;
-    let x=0;
-    let y =-1;
+    let x=-1;
+    let y =0;
     bot.on("physicsTick",()=>{
+      placedblock = false;
       const target = firstpos.offset(x,y,z);
       const blockpos = target.offset(-firstpos.x,-firstpos.y,-firstpos.z)
             if(!bot.pathfinder.isMoving()){
+              
               bot.pathfinder.setGoal(new GoalNear(target.x,target.y+1,target.z,0))
               bot.chat("/item replace entity @s container.0 with minecraft:"+schem.getBlock(blockpos).name)
               if(schem.getBlock(blockpos).name!=="air"){
                 placeBlockSafely(target)
 
+              }else{
+                z+=1;
               }
-              z+=1;
+              if(placedblock){
+                z+=1;
+
+              }
               
             }
             if(z >size.z){
@@ -121,10 +131,14 @@ function wait(ms){
 async function placeBlockSafely(target) {
   try {
       // Attempt to place the block, waiting for the operation to complete.
-      await bot.placeBlock(bot.blockAt(target.offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+      console.log(target);
+      await bot.placeBlock(bot.blockAt(target.round().offset(0, 1, 0)), {x: 0, y: -1, z: 0});
+      
+      placedblock=true;
     //  console.log('Block placed successfully.');
   } catch (error) {
       // Handle any errors that occur during the block placement.
       bot.chat("cant place block")
+      placeBlockSafely(target);
   }
 }
