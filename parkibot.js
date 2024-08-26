@@ -48,8 +48,8 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
    // if(message==="")
   if(message ==="follow"){
     let target = bot.players[username]
-    
      bot.on("physicsTick",async ()=>{
+      bot.setControlState("forward",true);
        closest_block=bot.blockAt(bot.entity.position.offset(0,50,0));
      
         for (let x = -1; x < 2; x++) {
@@ -58,7 +58,8 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
             if(bot.blockAt(bot.entity.position.offset(x,0,z))!==null &&bot.blockAt(bot.entity.position.offset(x,0,z))!==bot.blockAt(bot.entity.position.offset(0,0,0)) && closest_block.position.distanceTo(target.entity.position)>bot.blockAt(bot.entity.position.offset(x,0,z)).position.distanceTo(target.entity.position)){
 
               if(bot.blockAt(bot.entity.position.offset(x,1,z)).type===0 &&bot.blockAt(bot.entity.position.offset(x,2,z)).type===0){
-                closest_block = bot.blockAt(bot.entity.position.offset(x,0,z))
+                  closest_block = bot.blockAt(bot.entity.position.offset(x,0,z))
+
 
               }
             }
@@ -78,8 +79,8 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
 });
 function roundhalf(value) {
   if(value>0){
-    return value+0.5;
+    return value+0.7;
   }else{
-    return value-0.5;
+    return value-0.7;
   }
 }
