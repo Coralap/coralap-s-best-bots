@@ -66,13 +66,44 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
     finish =true;
     bot.on("physicsTick",async ()=>{
       placedblock = false;
+      
       const target = firstpos.offset(x,y,z);
       const blockpos = target.offset(-firstpos.x,-firstpos.y,-firstpos.z)
             if(!bot.pathfinder.isMoving()&&finish){
             
               finish=false;
               if(schem.getBlock(blockpos).name!=="air"){
-                await bot.pathfinder.goto(new GoalNear(target.x-1,target.y+1,target.z,1))
+                face =schem.getBlock(blockpos).getProperties().facing;
+                istrap =schem.getBlock(blockpos).name.includes("trapdoor");
+                if(face==="north" &&!istrap){
+                  await bot.pathfinder.goto(new GoalNear(target.x,target.y+1,target.z+2,1))
+                }else if(face ==="west" &&!istrap ){
+                  await bot.pathfinder.goto(new GoalNear(target.x+2,target.y+1,target.z,1))
+
+                }else if (face ==="south"&&!istrap){
+                  await bot.pathfinder.goto(new GoalNear(target.x,target.y+1,target.z-2,1))
+
+                }else if (face ==="east"&&!istrap){
+                  await bot.pathfinder.goto(new GoalNear(target.x-2,target.y+1,target.z,1))
+
+                }
+                else if(face==="south" &&istrap){
+                  await bot.pathfinder.goto(new GoalNear(target.x,target.y+1,target.z+2,1))
+                }else if(face ==="east" &&istrap ){
+                  await bot.pathfinder.goto(new GoalNear(target.x+2,target.y+1,target.z,1))
+
+                }else if (face ==="north"&&istrap){
+                  await bot.pathfinder.goto(new GoalNear(target.x,target.y+1,target.z-2,1))
+
+                }else if (face ==="west"&&istrap){
+                  await bot.pathfinder.goto(new GoalNear(target.x-2,target.y+1,target.z,1))
+
+                }
+                 else{
+                  await bot.pathfinder.goto(new GoalNear(target.x-1,target.y+1,target.z,1))
+
+                }
+                
                 await placeBlockSafely(target,schem,blockpos)
                 
               }
@@ -127,7 +158,7 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
 
 async function main () {
   // Read a schematic (sponge or mcedit format)
-  const file = fs.readFileSync('schematics/coolhedad.schem');
+  const file = fs.readFileSync('schematics/trapdoor.schem');
   const schematic = await Schematic.read(file)
   
   // Write a schematic (sponge format)
@@ -146,12 +177,19 @@ async function placeBlockSafely(target,schem,blockpos) {
       // Attempt to place the block, waiting for the operation to complete.
       bot.setQuickBarSlot(0);
       if(schem.getBlock(blockpos).name!=="air"){
+        bot.setControlState("sneak",true);
         if(bot.blockAt(target.round().offset(0,-1,0)).name==="air"){
+    
           try{
+           
+
             bot.chat("/item replace entity @s container.0 with minecraft:dirt")
 
             await bot.lookAt(target.round(),true);
-            await bot.placeBlock(bot.blockAt(target.round().offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+              await bot.placeBlock(bot.blockAt(target.round().offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+       
+
+          
           }catch(erro){
 
           }
@@ -159,11 +197,21 @@ async function placeBlockSafely(target,schem,blockpos) {
         }
         bot.chat("/item replace entity @s container.0 with minecraft:"+schem.getBlock(blockpos).name)
         await bot.lookAt(target.round(),true);
-        await bot.placeBlock(bot.blockAt(target.round().offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+
+        if(schem.getBlock(blockpos).metadata==1 || schem.getBlock(blockpos).getProperties().half=="top"){
+          await bot.placeBlock(bot.blockAt(target.round().offset(0, 0, 0)), {x: 0, y: -1, z: 0});
+
+        }
+        else{
+          await bot.placeBlock(bot.blockAt(target.round().offset(0, -1, 0)), {x: 0, y: 1, z: 0});
+
+        }
+
         
       }
-
       placedblock=true;
+      bot.setControlState("sneak",false);
+
     //  console.log('Block placed successfully.');
   } catch (error) {
       // Handle any errors that occur during the block placement.
@@ -172,3 +220,4 @@ async function placeBlockSafely(target,schem,blockpos) {
       placedblock=true
   }
 }
+//9:44
