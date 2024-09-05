@@ -47,17 +47,33 @@ bot.on("login",()=>{
 bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
    // if(message==="")
   if(message ==="follow"){
+    let path = [bot.entity.position.clone()]
     let target = bot.players[username]
     for (let i = 1; i < Math.ceil(target.entity.position.distanceTo(bot.entity.position)); i++) {
+
       let blocks = getAll(i, bot);
-      blocks.map(block => {
+      blocks
+        .filter(block => {
+          return (bot.blockAt(block.position.offset(0,2,0)).type!=0)
+        })
+        .map(block => {
         block.distance = distance(bot.entity.position, block.position);
       })
-      let smallest
+
+      let smallest = smallest_distance(blocks);
+      path.push(smallest);
+
 
 
 
       // generatePotentials(bot, target, blocks);
+      try {
+        // await bot.dig(smallest.block)
+        bot.placeBlock(smallest.block, { x: 0, y: 1, z: 0 })
+
+      } catch (error) {
+        bot.chat("error placing block")
+      }
 
 
     }
@@ -89,15 +105,25 @@ function getAll(radius, bot){
           distance: 0
         };
         blocks.push(block)
-        bot.placeBlock(block, {x: 0, y: 1, z: 0})
-        console.log(index)
+        // if (block.block.type != 0){
+        //   await bot.dig(block.block)
+        // }
+        if (block.block.type != 0) {
+          continue;
+        }
+        try {
+          bot.placeBlock(block.block, { x: 0, y: 1, z: 0 })
+
+        } catch (error) {
+          // bot.chat("error placing block")
+        }
+
 
         // bot.chat("Block at: " + blocks[blocks.length - 1].position + " is " + blocks[blocks.length - 1].block.type)
 
       }
     }
   }
-  // blocks = blocks.filter(block => )
   // blocks.forEach(block => bot.chat("Block at: " + block.position + " is " + block.block.name));
 
 
