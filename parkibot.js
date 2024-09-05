@@ -48,20 +48,19 @@ bot.on("chat",async(username,message,translate,jsonMsg,matches) =>{
    // if(message==="")
   if(message ==="follow"){
     let target = bot.players[username]
-
-    getAll(10, bot);
-    bot.on("physicsTick",async ()=>{
-      bot.setControlState("forward",true);
-      closest_block=bot.blockAt(bot.entity.position.offset(0,50,0));
-
-
-
-      bot.lookAt(Vec3(roundhalf(closest_block.position.x),closest_block.position.y,roundhalf(closest_block.position.z)))
-      bot.setControlState("forward",true);
+    for (let i = 1; i < Math.ceil(target.entity.position.distanceTo(bot.entity.position)); i++) {
+      let blocks = getAll(i, bot);
+      blocks.map(block => {
+        block.distance = distance(bot.entity.position, block.position);
+      })
+      let smallest
 
 
-    });
 
+      // generatePotentials(bot, target, blocks);
+
+
+    }
   }
 
 });
@@ -78,40 +77,53 @@ function getAll(radius, bot){
 
   const range = radius * 2;
 
-  for(let x = 1; x <= radius*2; x++){
-    for(let y =1; y <= radius*2; y++){
-      for(let z = 1; z <= radius*2; z++){
+  for(let x = 0; x < radius*2; x++){
+    for(let y =0; y < radius*2; y++){
+      for(let z = 0; z < radius*2; z++){
         // index of block from 3 numbers
         let index = x * range * range + y * range + z
-        blocks.push({
-          block: bot.blockAt(bot.entity.position.offset(x, y, z)),
-          position: bot.entity.position.offset(x, y, z),
+        let block = {
+          block: bot.blockAt(bot.entity.position.offset(x - radius, y - radius, z - radius)),
+          position: bot.entity.position.offset(x - radius, y - radius, z - radius),
           index,
-          potential: 0
-        })
+          distance: 0
+        };
+        blocks.push(block)
+        bot.placeBlock(block, {x: 0, y: 1, z: 0})
         console.log(index)
+
         // bot.chat("Block at: " + blocks[blocks.length - 1].position + " is " + blocks[blocks.length - 1].block.type)
 
       }
     }
   }
-  blocks = blocks.filter(block => block.block.type !== 0)
+  // blocks = blocks.filter(block => )
   // blocks.forEach(block => bot.chat("Block at: " + block.position + " is " + block.block.name));
 
 
   return blocks
 }
 
-function generatePotentials(blocks){
+function generatePotentials(bot, target, blocks){
   blocks.map(block => {
     if(block.block.type === 0){
       block.potential = -10000;
     } else {
-      block.potential = distance(block.index.position);
     }
   });
+  return blocks;
 }
 
-function distance(position){
-  return Math.sqrt(position.x * position.x + position.y * position.y + position.z * position.z);
+function distance(start, position){
+  return Math.sqrt(Math.pow(start.x - position.x, 2) + Math.pow(start.y - position.y, 2) + Math.pow(start.z - position.z, 2));
+}
+
+function smallest_distance(blocks){
+  let smallest = blocks[0];
+  blocks.map(block => {
+    if(block.distance < smallest.distance){
+      smallest = block;
+    }
+  });
+  return smallest;
 }
